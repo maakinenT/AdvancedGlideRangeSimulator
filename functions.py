@@ -136,27 +136,27 @@ def plotDragPolars(gliders):
     plt.savefig('results/drag_polars.png')
     plt.show()
 
-def plotAirfielCenteredLAR(LAR, x, y, max_range_HDG, min_range_HDG):
+def plotAirfielCenteredLAR(ax, LAR, x, y, max_range_HDG, min_range_HDG):
     """
     Plot Airfield centered LAR.
 
     Args:
         
     """
-    plt.figure(figsize=(8, 6))  # Adjust the figure size if needed
-    plt.plot(0, 0, "o")
-    plt.plot(x, y, "r")  # 
-    plt.plot([0, LAR[max_range_HDG][0]/1000], [0, LAR[max_range_HDG][1]/1000], "r--", label=str("max: "+"{:.1f}".format(math.sqrt(LAR[max_range_HDG][0]**2 + LAR[max_range_HDG][1]**2)/1000)+" km"))
-    plt.plot([0, LAR[min_range_HDG][0]/1000], [0, LAR[min_range_HDG][1]/1000], "r-.", label=str("max: "+"{:.1f}".format(math.sqrt(LAR[min_range_HDG][0]**2 + LAR[min_range_HDG][1]**2)/1000)+" km"))
-    plt.title('Airfield centered glide range')
-    plt.xlabel('(km)')
-    plt.ylabel('(km)')
-    plt.legend(loc='upper right')
-    plt.grid(True)
-    # Save the plot as a PNG file
-    plt.savefig('results/drag_polars.png')
-    plt.axis('equal')
-    plt.show()
+    # plt.figure(figsize=(8, 6))  # Adjust the figure size if needed
+    ax.plot(0, 0, "o")
+    ax.plot(x, y, "r")  # 
+    ax.plot([0, LAR[max_range_HDG][0]/1000], [0, LAR[max_range_HDG][1]/1000], "r--", label=str("max: "+"{:.1f}".format(math.sqrt(LAR[max_range_HDG][0]**2 + LAR[max_range_HDG][1]**2)/1000)+" km"))
+    ax.plot([0, LAR[min_range_HDG][0]/1000], [0, LAR[min_range_HDG][1]/1000], "r-.", label=str("max: "+"{:.1f}".format(math.sqrt(LAR[min_range_HDG][0]**2 + LAR[min_range_HDG][1]**2)/1000)+" km"))
+    ax.set_title('Airfield centered glide range')
+    ax.set_xlabel('(km)')
+    ax.set_ylabel('(km)')
+    ax.legend(loc='upper right')
+    ax.grid(True)
+    ax.axis('equal')
+    
+    
+    return ax
 
 def draw_arrow(gmap, start_lat, start_lon, direction, wind_speed, radius, name, color='red'):
     radius = wind_speed/10*radius

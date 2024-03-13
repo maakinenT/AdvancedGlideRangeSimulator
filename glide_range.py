@@ -5,7 +5,7 @@ import webbrowser
 import matplotlib.pyplot as plt
 import math
 import tkinter as tk
-
+from tkinter import filedialog
 
 # Import Classes and functions
 from Glider import Glider
@@ -13,7 +13,6 @@ from scenario import Scenario
 from functions import relativePosToCoordinates
 from functions import polarToCartesian
 from functions import read_points_from_csv
-from functions import plotPoints
 from functions import plotDragPolars
 from functions import plotAirfielCenteredLAR
 from functions import printLogo
@@ -47,14 +46,22 @@ def read_input_data():
   start_altitude = float(start_altitude_entry.get())
   end_altitude = float(end_altitude_entry.get())
   airmass_vv = float(airmass_vv_entry.get())
+  glider_filname = file_label_entry.get()
 
-  scenario = Scenario(ID, start_altitude, end_altitude, airmass_vv)
+  scenario = Scenario(ID, glider_filname, start_altitude, end_altitude, airmass_vv)
 
   scenarios[ID] = scenario
   # ID_entry.insert(0, ID_entry.get()+'1')    #autoupdate scanario nro
 
   print(scenarios)
 
+def select_file():
+  filename = filedialog.askopenfilename()
+  if filename:
+    name = filename.split("/")[-1]
+    file_label_entry.delete(0, tk.END)
+    file_label_entry.insert(0, f"{name}")
+    # file_label.config(text=f"Selected file: {name}")
 
 row = 2
 column = 0  
@@ -89,6 +96,16 @@ ID_entry= tk.Entry(window)
 ID_entry.insert(0, "0")        # default value
 ID_entry.grid(row=row+0, column=column+1, padx=10, pady=10)
 
+# Create a button to open the file explorer
+file_button = tk.Button(window, text="Select glider file", command=select_file)
+file_button.grid(row=9, column=0, padx=10, pady=10)
+
+# Label to display the selected file
+# file_label = tk.Label(window, text="")
+# file_label.grid(row=9, column=1, padx=10, pady=10)
+file_label_entry = tk.Entry(window)
+file_label_entry.grid(row=9, column=1, padx=10, pady=10)
+
 # Create scenario
 calculate_button = tk.Button(window, text="Create scenario", command=read_input_data)
 calculate_button.grid(row=10, column=3, padx=10, pady=10)
@@ -102,17 +119,23 @@ window.mainloop()
 # ------------------------------------- CREATING GLIDER ---------------------------------------
 
 #select gliders
-glider_filenames = ["gliders/ASK21_570kg.csv", 
-                    #"gliders/ASK21_470kg.csv",
-                    "gliders/ASK23_346kg.csv",
-                    "gliders/ASTIR_CS_JEANS_350kg.csv"]
+# glider_filenames = ["gliders/ASK21_570kg.csv", 
+#                     #"gliders/ASK21_470kg.csv",
+#                     "gliders/ASK23_346kg.csv",
+#                     "gliders/ASTIR_CS_JEANS_350kg.csv"]
+
+glider_filenames = []
+for ID in scenarios:
+  glider_filenames.append(scenarios[ID].glider_file)
+
+print(glider_filenames)
 
 # Create a Dict of gliders
 gliders_dict = {}
 
-for i in range(len(glider_filenames)):
+for file_name in glider_filenames:
   # read data from csv
-  data, drag_polar = read_points_from_csv(glider_filenames[i])
+  data, drag_polar = read_points_from_csv("gliders/"+str(file_name))
 
   drag_polar_airspeeds = []
   drag_polar_sink_rates = []
@@ -133,126 +156,129 @@ for i in range(len(glider_filenames)):
 
   # print("Glider ", i, " name: ", glider.name)
 
-  gliders_dict[glider.name] = glider
+  gliders_dict[file_name] = glider        #use filename as key
 
 plotDragPolars(gliders_dict)
 
 # -------------------------------- END OF CREATING GLIDER -------------------------------------
 
-ID = "0"
+LAR_figure, LAR_figure_ax = plt.subplots()  # Create LAR figure
 
-# ---------------------------------- SCENARIO PARAMETERS --------------------------------------
+for ID in scenarios:
 
-# TODO: manage scenarios with csv file
-# TODO: run multiple scanarios and plot on same figure
+  # ---------------------------------- SCENARIO PARAMETERS --------------------------------------
 
-selected_glider_name = 'ASK-23 346kg'
-selected_glider = gliders_dict[selected_glider_name]
-airfield_location = EFJM
-end_altitude = scenarios[ID].end_altitude
-start_altitude = scenarios[ID].start_altitude
-dT = 1                        #s
+  # TODO: manage scenarios with csv file
+  print(gliders_dict.keys())
+  selected_glider = gliders_dict[scenarios[ID].glider_file]
+  airfield_location = EFJM
+  end_altitude = scenarios[ID].end_altitude
+  start_altitude = scenarios[ID].start_altitude
+  dT = 1                        #s
 
-vertical_airmass_velocity = scenarios[ID].airmass_vv
-# Winds [(altitude_meters, speed_m/s, direction_degrees_TRUE)]
-winds = [
-    [0,         5,      70],
-    [1000,      10,     60],
-    [2000,      15,     20],
-    [3000,      20,     0]
-    ]
+  vertical_airmass_velocity = scenarios[ID].airmass_vv
+  # Winds [(altitude_meters, speed_m/s, direction_degrees_TRUE)]
+  winds = [
+      [0,         5,      70],
+      [1000,      10,     60],
+      [2000,      15,     20],
+      [3000,      20,     0]
+      ]
 
-# TODO: selected airspeed logic
+  # TODO: selected airspeed logic
 
-print('SELECTED GLIDER:')
-print('Name: ', selected_glider.name)
-# print('Min sink: ', selected_glider.min_sink, 'm/s at ', selected_glider.min_sink_at, 'km/h')
-# print('Best L/D: ', selected_glider.best_glide, ' at ', selected_glider.best_glide_at, 'km/h')
+  print('SELECTED GLIDER:')
+  print('Name: ', selected_glider.name)
+  # print('Min sink: ', selected_glider.min_sink, 'm/s at ', selected_glider.min_sink_at, 'km/h')
+  # print('Best L/D: ', selected_glider.best_glide, ' at ', selected_glider.best_glide_at, 'km/h')
 
-# ------------------------------ END OF SCENARIO PARAMETERS -----------------------------------
-
-
-# ----------------------------- AIRFIELD CENTERED GLIDER RANGE --------------------------------
-
-winds_altitudes = []
-winds_speeds = []
-winds_directions = []
-
-for row in winds:
-  winds_altitudes.append(row[0])
-  winds_speeds.append(row[1])   
-  winds_directions.append(row[2])   
+  # ------------------------------ END OF SCENARIO PARAMETERS -----------------------------------
 
 
-# Simulation
+  # ----------------------------- AIRFIELD CENTERED GLIDER RANGE --------------------------------
 
-glide_LAR = {}
-X_pos_list = []
-y_pos_list = []
+  winds_altitudes = []
+  winds_speeds = []
+  winds_directions = []
 
-for track_heading in range(0, 359, 10):
+  for row in winds:
+    winds_altitudes.append(row[0])
+    winds_speeds.append(row[1])   
+    winds_directions.append(row[2])   
 
-  altitude = start_altitude
-  time = 0
-  x_pos = 0
-  y_pos = 0
 
-  #simulation of flight to heading
-  while altitude > end_altitude:
+  # Simulation
 
-    # linear interpolation
-    wind_speed_at_altitude = numpy.interp(altitude, winds_altitudes, winds_speeds,
-                                          left=None, right=None, period=None)
-    wind_direction_at_altitude = numpy.interp(altitude, winds_altitudes, winds_directions,
-                                          left=None, right=None, period=None)
-    
-    # TODO: select speed to fly
-    airspeed = selected_glider.best_glide_at/3.6     #m/s
+  glide_LAR = {}
+  X_pos_list = []
+  y_pos_list = []
 
-    # calculate vertical velocity
-    total_VV = vertical_airmass_velocity - selected_glider.sinkAtAirspeed(airspeed)
+  for track_heading in range(0, 359, 10):
 
-    # calculate wind omponents. Positive alongtrack_wind = tailwind, positive crosstrack_wind = wind from left
-    alongtrack_wind, crosstrack_wind = wind_components(wind_speed_at_altitude, wind_direction_at_altitude, track_heading)
+    altitude = start_altitude
+    time = 0
+    x_pos = 0
+    y_pos = 0
 
-    # TAS calculation
-    TAS = alongtrack_wind + math.sqrt(airspeed**2 - crosstrack_wind**2)
+    #simulation of flight to heading
+    while altitude > end_altitude:
 
-    # x_vel and y_vel calculation
-    x_vel, y_vel = polarToCartesian(TAS, track_heading)
+      # linear interpolation
+      wind_speed_at_altitude = numpy.interp(altitude, winds_altitudes, winds_speeds,
+                                            left=None, right=None, period=None)
+      wind_direction_at_altitude = numpy.interp(altitude, winds_altitudes, winds_directions,
+                                            left=None, right=None, period=None)
+      
+      # TODO: select speed to fly
+      airspeed = selected_glider.best_glide_at/3.6     #m/s
 
-    # integration
-    altitude += total_VV*dT
-    x_pos -= x_vel*dT         # from the limit of glide range towards airfied ==> minus sign
-    y_pos -= y_vel*dT         # from the limit of glide range towards airfied ==> minus sign
-    time += dT
+      # calculate vertical velocity
+      total_VV = vertical_airmass_velocity - selected_glider.sinkAtAirspeed(airspeed)
 
-  # save this track LAR data to dict
-  glide_LAR[track_heading] = [x_pos, y_pos, time]
-  X_pos_list.append(x_pos/1000)
-  y_pos_list.append(y_pos/1000)
+      # calculate wind components. Positive alongtrack_wind = tailwind, positive crosstrack_wind = wind from left
+      alongtrack_wind, crosstrack_wind = wind_components(wind_speed_at_altitude, wind_direction_at_altitude, track_heading)
 
-X_pos_list.append(X_pos_list[0])    #close LAR circle
-y_pos_list.append(y_pos_list[0])    #close LAR circle
+      # GS calculation
+      GS = alongtrack_wind + math.sqrt(airspeed**2 - crosstrack_wind**2)
 
-min_range = 9999999999
-min_range_HDG = 0
-max_range_HDG = 0
-max_range = 0
+      # x_vel and y_vel calculation
+      x_vel, y_vel = polarToCartesian(GS, track_heading)
 
-for HDG in glide_LAR:
-  range = math.sqrt(glide_LAR[HDG][0]**2 + glide_LAR[HDG][1]**2)
-  if range > max_range:
-    max_range = range
-    max_range_HDG = HDG
-  if range < min_range:
-    min_range = range
-    min_range_HDG = HDG
+      # integration
+      altitude += total_VV*dT
+      x_pos -= x_vel*dT         # from the limit of glide range towards airfied ==> minus sign
+      y_pos -= y_vel*dT         # from the limit of glide range towards airfied ==> minus sign
+      time += dT
 
-plotAirfielCenteredLAR(glide_LAR, X_pos_list, y_pos_list, max_range_HDG, min_range_HDG)
+    # save this track LAR data to dict
+    glide_LAR[track_heading] = [x_pos, y_pos, time]
+    X_pos_list.append(x_pos/1000)
+    y_pos_list.append(y_pos/1000)
 
-# -------------------------- END OF AIRFIELD CENTERED GLIDER RANGE ----------------------------
+  X_pos_list.append(X_pos_list[0])    #close LAR circle
+  y_pos_list.append(y_pos_list[0])    #close LAR circle
 
+  min_range = 9999999999
+  min_range_HDG = 0
+  max_range_HDG = 0
+  max_range = 0
+
+  for HDG in glide_LAR:
+    r = math.sqrt(glide_LAR[HDG][0]**2 + glide_LAR[HDG][1]**2)
+    if r > max_range:
+      max_range = r
+      max_range_HDG = HDG
+    if r < min_range:
+      min_range = r
+      min_range_HDG = HDG
+
+  LAR_figure_ax = plotAirfielCenteredLAR(LAR_figure_ax, glide_LAR, X_pos_list, y_pos_list, max_range_HDG, min_range_HDG)
+
+  # -------------------------- END OF AIRFIELD CENTERED GLIDER RANGE ----------------------------
+
+plt.show()
+# Save the plot as a PNG file
+# LAR_figure.savefig('results/drag_polars.png')
 
 # -------------------------------------- MAP PLOTTER ------------------------------------------
 # Create the map plotter:

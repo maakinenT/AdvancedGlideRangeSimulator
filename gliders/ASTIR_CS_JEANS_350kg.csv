@@ -1,4 +1,4 @@
-﻿# name;
+﻿# name
 name;ASTIR CS JEANS 350kg
 # mass in kg;
 mass;350
@@ -10,7 +10,7 @@ min_sink_at;75
 best_glide;37.3
 # best glide at (km/h);
 best_glide_at;95
-;
+
 airspeed (km/h);Sink rate (m/s)
 61.41593;1.4783
 62.01328;1.103074

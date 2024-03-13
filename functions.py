@@ -75,6 +75,23 @@ def wind_components(wind_speed, wind_direction, track_HDG):
     
     return alongtrack, crosstrack
 
+def max_min_range_heading(glide_LAR):
+    min_range = 9999999999
+    min_range_HDG = 0
+    max_range_HDG = 0
+    max_range = 0
+
+    for HDG in glide_LAR:
+        r = math.sqrt(glide_LAR[HDG][0]**2 + glide_LAR[HDG][1]**2)
+        if r > max_range:
+            max_range = r
+            max_range_HDG = HDG
+        if r < min_range:
+            min_range = r
+            min_range_HDG = HDG
+
+    return max_range_HDG, min_range_HDG
+
 def read_points_from_csv(csv_file):
     """
 

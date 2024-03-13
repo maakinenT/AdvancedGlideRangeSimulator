@@ -40,6 +40,8 @@ scenarios = {}
 window = tk.Tk()
 window.title("Advanced Glide Range Simulator")
 
+def on_select(event):
+    selected_wind_unit.set(selected_wind_unit.get())  # Update the label with the selected option
 
 def read_input_data():
   ID = str(ID_entry.get())
@@ -47,8 +49,28 @@ def read_input_data():
   end_altitude = float(end_altitude_entry.get())
   airmass_vv = float(airmass_vv_entry.get())
   glider_filname = file_label_entry.get()
+  w0s = float(wind_0_speed_entry.get())
+  w1s = float(wind_1_speed_entry.get())
+  w2s = float(wind_2_speed_entry.get())
+  w3s = float(wind_3_speed_entry.get())
+  w0d = float(wind_0_direction_entry.get())
+  w1d = float(wind_1_direction_entry.get())
+  w2d = float(wind_2_direction_entry.get())
+  w3d = float(wind_3_direction_entry.get())
+  wind_unit = selected_wind_unit.get()
+  if wind_unit == "m/s":
+    factor = 1
+  if wind_unit == "kts":
+    factor = 0.514444
 
-  scenario = Scenario(ID, glider_filname, start_altitude, end_altitude, airmass_vv)
+  winds = [
+    [0,        factor*w0s,     w0d],
+    [500,      factor*w1s,     w1d],
+    [1000,     factor*w2s,     w2d],
+    [2000,     factor*w3s,     w3d]
+    ]
+
+  scenario = Scenario(ID, glider_filname, start_altitude, end_altitude, airmass_vv, winds)
 
   scenarios[ID] = scenario
   # ID_entry.insert(0, ID_entry.get()+'1')    #autoupdate scanario nro
@@ -63,7 +85,7 @@ def select_file():
     file_label_entry.insert(0, f"{name}")
     # file_label.config(text=f"Selected file: {name}")
 
-row = 2
+row = 1
 column = 0  
 # Start altitude
 label = tk.Label(window, text="Start altitude (m ASL):")
@@ -78,14 +100,62 @@ end_altitude_entry = tk.Entry(window)
 end_altitude_entry.insert(0, "300")        # default value
 end_altitude_entry.grid(row=row+1, column=column+1, padx=10, pady=10)
 
-row = 5
-column = 0
+row = -1
+column = 3
+# wind units
+label = tk.Label(window, text="(degT):")
+label.grid(row=row+1, column=column+1, padx=10, pady=10)
+# Options for the dropdown menu
+options = ["m/s", "kts"]
+# Variable to store the selected option
+selected_wind_unit = tk.StringVar(window)
+selected_wind_unit.set(options[0])
+# Set default value for selected_option
+wind_unit_select = tk.OptionMenu(window, selected_wind_unit, *options, command=on_select)
+wind_unit_select.grid(row=row+1, column=column+2, padx=10, pady=10)
+
+# SFC wind
+label = tk.Label(window, text="SFC wind:")
+label.grid(row=row+2, column=column+0, padx=10, pady=10)
+wind_0_direction_entry = tk.Entry(window, width=5)
+wind_0_direction_entry.insert(0, "0")        # default value
+wind_0_direction_entry.grid(row=row+2, column=column+1, padx=10, pady=10)
+wind_0_speed_entry = tk.Entry(window, width=5)
+wind_0_speed_entry.insert(0, "3")        # default value
+wind_0_speed_entry.grid(row=row+2, column=column+2, padx=10, pady=10)
+# 500m wind
+label = tk.Label(window, text="500m wind:")
+label.grid(row=row+3, column=column+0, padx=10, pady=10)
+wind_1_direction_entry = tk.Entry(window, width=5)
+wind_1_direction_entry.insert(0, "30")        # default value
+wind_1_direction_entry.grid(row=row+3, column=column+1, padx=10, pady=10)
+wind_1_speed_entry = tk.Entry(window, width=5)
+wind_1_speed_entry.insert(0, "10")        # default value
+wind_1_speed_entry.grid(row=row+3, column=column+2, padx=10, pady=10)
+# 1000m wind
+label = tk.Label(window, text="1km wind:")
+label.grid(row=row+4, column=column+0, padx=10, pady=10)
+wind_2_direction_entry = tk.Entry(window, width=5)
+wind_2_direction_entry.insert(0, "60")        # default value
+wind_2_direction_entry.grid(row=row+4, column=column+1, padx=10, pady=10)
+wind_2_speed_entry = tk.Entry(window, width=5)
+wind_2_speed_entry.insert(0, "12")        # default value
+wind_2_speed_entry.grid(row=row+4, column=column+2, padx=10, pady=10)
+# 2000m wind
+label = tk.Label(window, text="2km wind:")
+label.grid(row=row+5, column=column+0, padx=10, pady=10)
+wind_3_direction_entry = tk.Entry(window, width=5)
+wind_3_direction_entry.insert(0, "90")        # default value
+wind_3_direction_entry.grid(row=row+5, column=column+1, padx=10, pady=10)
+wind_3_speed_entry = tk.Entry(window, width=5)
+wind_3_speed_entry.insert(0, "15")        # default value
+wind_3_speed_entry.grid(row=row+5, column=column+2, padx=10, pady=10)
 # Airmass vertical velocity
-label = tk.Label(window, text="Airmass VV (m/s):")
-label.grid(row=row+1, column=column+0, padx=10, pady=10)
-airmass_vv_entry = tk.Entry(window)
+label = tk.Label(window, text="Airmass VV:")
+label.grid(row=row+6, column=column+0, padx=10, pady=10)
+airmass_vv_entry = tk.Entry(window, width=5)
 airmass_vv_entry.insert(0, "0")        # default value
-airmass_vv_entry.grid(row=row+1, column=column+1, padx=10, pady=10)
+airmass_vv_entry.grid(row=row+6, column=column+2, padx=10, pady=10)
 
 row = 10
 column = 0
@@ -113,7 +183,7 @@ calculate_button.grid(row=10, column=3, padx=10, pady=10)
 # Run the main event loop
 window.mainloop()
 
-
+print(scenarios['0'].winds)
 # ------------------------------------ END OF GUI --------------------------------------------
 
 # ------------------------------------- CREATING GLIDER ---------------------------------------
@@ -127,8 +197,6 @@ window.mainloop()
 glider_filenames = []
 for ID in scenarios:
   glider_filenames.append(scenarios[ID].glider_file)
-
-print(glider_filenames)
 
 # Create a Dict of gliders
 gliders_dict = {}
@@ -169,7 +237,6 @@ for ID in scenarios:
   # ---------------------------------- SCENARIO PARAMETERS --------------------------------------
 
   # TODO: manage scenarios with csv file
-  print(gliders_dict.keys())
   selected_glider = gliders_dict[scenarios[ID].glider_file]
   airfield_location = EFJM
   end_altitude = scenarios[ID].end_altitude
@@ -178,12 +245,7 @@ for ID in scenarios:
 
   vertical_airmass_velocity = scenarios[ID].airmass_vv
   # Winds [(altitude_meters, speed_m/s, direction_degrees_TRUE)]
-  winds = [
-      [0,         5,      70],
-      [1000,      10,     60],
-      [2000,      15,     20],
-      [3000,      20,     0]
-      ]
+  winds = scenarios[ID].winds
 
   # TODO: selected airspeed logic
 
@@ -221,7 +283,7 @@ for ID in scenarios:
     y_pos = 0
 
     #simulation of flight to heading
-    while altitude > end_altitude:
+    while altitude > end_altitude:    # TODO: if positive VV, prevent infinite range 
 
       # linear interpolation
       wind_speed_at_altitude = numpy.interp(altitude, winds_altitudes, winds_speeds,
@@ -326,12 +388,12 @@ arrow_scale = 1000  #km / 10m/s
 start_lat, start_lon = relativePosToCoordinates(*airfield_location, offset, offset)
 # Draw SFC wind arrow
 draw_arrow(gmap, start_lat, start_lon, winds_directions[0], winds_speeds[0], arrow_scale, name="SFC", color="r")
+# Draw 500m wind arrow
+draw_arrow(gmap, start_lat, start_lon, winds_directions[1], winds_speeds[1], arrow_scale, name="500m", color="w")
 # Draw 1000m wind arrow
-draw_arrow(gmap, start_lat, start_lon, winds_directions[1], winds_speeds[1], arrow_scale, name="1 km", color="w")
+draw_arrow(gmap, start_lat, start_lon, winds_directions[2], winds_speeds[2], arrow_scale, name="1 km", color="m")
 # Draw 2000m wind arrow
-draw_arrow(gmap, start_lat, start_lon, winds_directions[2], winds_speeds[2], arrow_scale, name="2 km", color="m")
-# Draw 3000m wind arrow
-draw_arrow(gmap, start_lat, start_lon, winds_directions[3], winds_speeds[3], arrow_scale, name="3 km", color="y")
+draw_arrow(gmap, start_lat, start_lon, winds_directions[3], winds_speeds[3], arrow_scale, name="2 km", color="y")
 
 
 # Draw the map:

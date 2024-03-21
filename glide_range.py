@@ -53,11 +53,22 @@ scenarios = {}
 # ------------------------------ END OF CREATE SCENARIO DICT ----------------------------------
 
 
-
 # --------------------------------------- GUI -------------------------------------------------
 GUI(scenarios)    # store GUI inout in scenario dict (global)
 # ------------------------------------ END OF GUI --------------------------------------------
 
+
+# ------------------------------- INITIALIZE FIGURES -----------------------------------------
+# Initialize figures where all skenarios will be plotted
+figure_drag_polar, figure_drag_polar_ax = plt.subplots()
+figure_drag_polar_ax.invert_yaxis()
+LAR_figure, LAR_figure_ax = plt.subplots()
+desired_track_figure, desired_track_figure_ax = plt.subplots(5,1)
+for ax in desired_track_figure_ax:
+  ax.invert_xaxis()
+figure_optimum_flight_values, figure_optimum_flight_values_ax = plt.subplots()
+figure_optimum_speed_vs_VV, figure_optimum_speed_vs_VV_ax = plt.subplots(1,3, figsize=(16,5))
+# --------------------------- END OF INITIALIZE FIGURES ---------------------------------------
 
 
 # ------------------------------------- CREATING GLIDERS --------------------------------------
@@ -95,19 +106,11 @@ for file_name in glider_filenames:
   gliders_dict[file_name] = glider        #use filename as key
 
 # plot drag polar for every selected glider
-plotDragPolars(gliders_dict, color_list)
+figure_drag_polar_ax = plotDragPolars(figure_drag_polar_ax, gliders_dict, color_list)
 # -------------------------------- END OF CREATING GLIDERS -------------------------------------
 
 
 # -------------------------------------- SCENRIOS ----------------------------------------------
-
-# Initialize figures where all skenarios will be plotted
-LAR_figure, LAR_figure_ax = plt.subplots()  # Create LAR figure
-
-desired_track_figure, desired_track_figure_ax = plt.subplots(5,1)  # Create desired track heading values figure
-for ax in desired_track_figure_ax:
-      ax.invert_xaxis()
-
 for number in scenarios:    # Go through every scenario
 
   # ---------------------------------- SCENARIO PARAMETERS --------------------------------------
@@ -115,44 +118,38 @@ for number in scenarios:    # Go through every scenario
   graph_color = scenarios[number].color
   # Convert RGB values to hexadecimal color code
   hex_color = "#{:02x}{:02x}{:02x}".format(int(graph_color[0]*255), int(graph_color[1]*255), int(graph_color[2]*255))
+  start_altitude = scenarios[number].start_altitude
   end_altitude = scenarios[number].end_altitude
   selected_airspeed = scenarios[number].base_airspeed
   headwind_correction = scenarios[number].headwind_correction
   AS_due_VV_correction = scenarios[number].AS_due_VV_correction
-  start_altitude = scenarios[number].start_altitude
+  drag_scale_factor = scenarios[number].drag_scale
   vertical_airmass_velocity = scenarios[number].airmass_vv
+
   winds = scenarios[number].winds   # Winds [(altitude_meters, speed_m/s, direction_degrees_TRUE)]
-
-  airfield_location = EFJM
-  dT = 1                        #s
-
-
-  # print('SELECTED GLIDER:')
-  # print('Name: ', selected_glider.name)
-  # print('Min sink: ', selected_glider.min_sink, 'm/s at ', selected_glider.min_sink_at, 'km/h')
-  # print('Best L/D: ', selected_glider.best_glide, ' at ', selected_glider.best_glide_at, 'km/h')
-
-  # ------------------------------ END OF SCENARIO PARAMETERS -----------------------------------
-
-
-  # ----------------------------- AIRFIELD CENTERED GLIDER RANGE --------------------------------
   winds_altitudes = []
   winds_speeds = []
   winds_directions = []
-
   for row in winds:
     winds_altitudes.append(row[0])
     winds_speeds.append(row[1])   
     winds_directions.append(row[2])   
 
-  # SIMULATION
+  airfield_location = EFJM
+  dT = 1                        #s
+  # ------------------------------ END OF SCENARIO PARAMETERS -----------------------------------
+
+
+  # ----------------------------- AIRFIELD CENTERED GLIDER RANGE --------------------------------
+  # LAR SIMULATION
 
   glide_LAR = {}
   glide_values = {}
-  X_pos_list = []
+  x_pos_list = []
   y_pos_list = []
 
-  for ground_track in range(0, 359, 10):
+  # --------------------------- GO THROUGH DIFFERENT GROUND TRACKS ------------------------------
+  for ground_track in range(0, 359, 5):
 
     altitude = start_altitude
     time = 0
@@ -165,7 +162,7 @@ for number in scenarios:    # Go through every scenario
     altitude_list = []
     LperD_list = []
 
-    # Simulation of flight to given ground track direction
+    # ------------------------- WHILE ALTITUDE > END_ALTITUDE -------------------------
     while altitude > end_altitude:    # TODO: if positive VV, prevent infinite range 
 
       # linear interpolation
@@ -174,11 +171,10 @@ for number in scenarios:    # Go through every scenario
       wind_direction_at_altitude = numpy.interp(altitude, winds_altitudes, winds_directions,
                                             left=None, right=None, period=None)
 
-
       # calculate wind components. Positive alongtrack_wind = tailwind, positive crosstrack_wind = wind from left
       alongtrack_wind, crosstrack_wind = wind_components(wind_speed_at_altitude, wind_direction_at_altitude, ground_track)
 
-      # TODO: select speed to fly
+      # -------------------------------- AIRSPEED SELECTION LOGIC -----------------------------
       if selected_airspeed <= 0:
         airspeed = selected_glider.best_glide_at/3.6     #m/s
       else:
@@ -190,9 +186,10 @@ for number in scenarios:    # Go through every scenario
 
       if vertical_airmass_velocity < 0:
         airspeed += -1*vertical_airmass_velocity*AS_due_VV_correction/3.6
+      # ---------------------------- END OF AIRSPEED SELECTION LOGIC --------------------------
 
-     # calculate vertical velocity    
-      total_VV = vertical_airmass_velocity - selected_glider.sinkAtAirspeed(airspeed*3.6)
+     # Calculate vertical velocity    
+      total_VV = vertical_airmass_velocity - selected_glider.sinkAtAirspeed(airspeed*3.6)*drag_scale_factor
 
       # GS calculation
       if airspeed**2 - crosstrack_wind**2 < 0:
@@ -203,7 +200,7 @@ for number in scenarios:    # Go through every scenario
       # x_vel and y_vel calculation
       x_vel, y_vel = polarToCartesian(GS, ground_track)
 
-      # integration
+      # Integration
       altitude += total_VV*dT
       x_pos -= x_vel*dT         # from the limit of glide range towards airfied ==> minus sign
       y_pos -= y_vel*dT         # from the limit of glide range towards airfied ==> minus sign
@@ -218,29 +215,90 @@ for number in scenarios:    # Go through every scenario
       vv_list.append(total_VV)
       altitude_list.append(altitude)
       LperD_list.append(LperD)
-
+    # ---------------------- END OF WHILE ALTITUDE > END_ALTITUDE ----------------------
 
     # save this track LAR data to dict
     glide_LAR[ground_track] = [x_pos, y_pos, time]
-    X_pos_list.append(x_pos/1000)
+    x_pos_list.append(x_pos/1000)
     y_pos_list.append(y_pos/1000)
     glide_values[ground_track] = [time_list, airspeed_list, groundspeed_list, vv_list, altitude_list, LperD_list]
+  # ------------------------ END OF GO THROUGH DIFFERENT GROUND TRACKS ---------------------------
 
-  X_pos_list.append(X_pos_list[0])    #close LAR circle
+  x_pos_list.append(x_pos_list[0])    #close LAR circle
   y_pos_list.append(y_pos_list[0])    #close LAR circle
 
   max_range_HDG, min_range_HDG = max_min_range_heading(glide_LAR)   # Find direction of maximum and minimum range
 
-  LAR_figure_ax = plotAirfielCenteredLAR(graph_color, LAR_figure_ax, glide_LAR, X_pos_list, y_pos_list, max_range_HDG, min_range_HDG)
+  LAR_figure_ax = plotAirfielCenteredLAR(graph_color, LAR_figure_ax, glide_LAR, x_pos_list, y_pos_list, max_range_HDG, min_range_HDG)
 
   desired_track_HDG = min_range_HDG
   desired_track_figure_ax = plotDesiredTrackValues(graph_color, desired_track_figure_ax, glide_values[desired_track_HDG], desired_track_HDG)
-
   # -------------------------- END OF AIRFIELD CENTERED GLIDER RANGE ----------------------------
 
-plt.show()  # Show lar figure
+
+  # ------------------------- OPTIMAL FLIGHT TO GIVEN TRACK DIRECTION ---------------------------
+  # number = 0  # optimum flight calculation for fist scenario
+  selected_glider = gliders_dict[scenarios[number].glider_file]
+  track_HDG = 0
+
+  vv_airmass_list = np.linspace(0,-2, 50)
+  airspeed_list = np.linspace(70, 180, 500)       #km/h
+
+  best_GR_AS_VV_list = []
+
+  for vv_airmass in vv_airmass_list:
+    glide_ratio_list = []
+    best_GR = 0
+    best_speed = 0
+    best_total_VV = 0
+
+    for airspeed in airspeed_list:
+
+      # calculate vertical velocity    
+      total_VV = vv_airmass - selected_glider.sinkAtAirspeed(airspeed)
+
+      # Ground speed calculation
+      GS = airspeed
+
+      # Geometric glide ratio calculation
+      GR = -GS/3.6/total_VV
+
+      if GR > best_GR:
+        best_GR = GR
+        best_speed = airspeed
+        best_total_VV = total_VV
+
+      glide_ratio_list.append(GR)
+
+    best_GR_AS_VV_list.append([vv_airmass, best_GR, best_speed, best_total_VV])
+
+    legend = "VV = {:.1f} m/s".format(vv_airmass)
+    figure_optimum_flight_values_ax = plotPoints(figure_optimum_flight_values_ax, airspeed_list, glide_ratio_list, "AS (km/h)", "GR", legend)
+
+  best_VV = []
+  best_GR = []
+  best_AS = []
+  best_VV_tot = []
+  for list in best_GR_AS_VV_list:
+    best_VV.append(list[0])
+    best_GR.append(list[1])
+    best_AS.append(list[2])
+    best_VV_tot.append(list[3])
+
+  figure_optimum_flight_values_ax = plotPoints(figure_optimum_flight_values_ax, best_AS, best_GR, "AS (km/h)", "GR", "max")
+
+  figure_optimum_speed_vs_VV_ax = plotOptimalFlightValues(figure_optimum_speed_vs_VV_ax, best_AS, best_VV, best_GR, best_VV_tot)
+  # -------------------- END OF  OPTIMAL FLIGHT TO GIVEN TRACK DIRECTION ------------------------
+
+
+# ------------------------------- SAVE AND SHOW FIGURES -----------------------------------------
+plt.show()
 # Save the plot as a PNG file
-LAR_figure.savefig('results/drag_polars.png')
+figure_optimum_flight_values.savefig('results/optimum_flight_values.png')
+figure_optimum_speed_vs_VV.savefig('results/optimum_speed_vs_VV.png')
+figure_drag_polar.savefig('results/drag_polar.png')
+LAR_figure.savefig('results/LAR.png')
+# ---------------------------- END OF SAVE AND SHOW FIGURES --------------------------------------
 
 # ----------------------------------- END OF SCENRIOS --------------------------------------------
 
@@ -299,84 +357,13 @@ draw_arrow(gmap, start_lat, start_lon, winds_directions[2], winds_speeds[2], arr
 # Draw 2000m wind arrow
 draw_arrow(gmap, start_lat, start_lon, winds_directions[3], winds_speeds[3], arrow_scale, name="2 km", color="y")
 
-
 # Draw the map:
 gmap.draw('results/map.html')
-
 # --------------------------------- END OF MAP PLOTTER ----------------------------------------
 
 
-
-# ------------------------- OPTIMAL FLIGHT TO GIVEN TRACK DIRECTION ---------------------------
-
-number = 0  # optimum flight calculation for fist scenario
-selected_glider = gliders_dict[scenarios[number].glider_file]
-track_HDG = 0
-
-vv_airmass_list = np.linspace(0,-2, 50)
-airspeed_list = np.linspace(70, 180, 500)       #km/h
-
-# Initialize figure
-figure_1, figure_1_ax = plt.subplots()
-
-best_GR_AS_VV_list = []
-
-for vv_airmass in vv_airmass_list:
-  glide_ratio_list = []
-  best_GR = 0
-  best_speed = 0
-  best_total_VV = 0
-
-  for airspeed in airspeed_list:
-
-    # calculate vertical velocity    
-    total_VV = vv_airmass - selected_glider.sinkAtAirspeed(airspeed)
-
-    # Ground speed calculation
-    GS = airspeed
-
-    # Geometric glide ratio calculation
-    GR = -GS/3.6/total_VV
-
-    if GR > best_GR:
-      best_GR = GR
-      best_speed = airspeed
-      best_total_VV = total_VV
-
-    glide_ratio_list.append(GR)
-
-  best_GR_AS_VV_list.append([vv_airmass, best_GR, best_speed, best_total_VV])
-
-  legend = "VV = {:.1f} m/s".format(vv_airmass)
-  figure_1_ax = plotPoints(figure_1_ax, airspeed_list, glide_ratio_list, "AS (km/h)", "GR", legend)
-
-best_VV = []
-best_GR = []
-best_AS = []
-best_VV_tot = []
-for list in best_GR_AS_VV_list:
-  best_VV.append(list[0])
-  best_GR.append(list[1])
-  best_AS.append(list[2])
-  best_VV_tot.append(list[3])
-
-figure_1_ax = plotPoints(figure_1_ax, best_AS, best_GR, "AS (km/h)", "GR", "max")
-
-# Initialize figure
-figure_2, figure2_ax = plt.subplots(1,3)
-figure2_ax = plotOptimalFlightValues(figure2_ax, best_AS, best_VV, best_GR, best_VV_tot)
-
-plt.show()  # Show lar figure
-# Save the plot as a PNG file
-figure_1.savefig('results/optimum_flight_values.png')
-figure_2.savefig('results/optimum_speed_vs_VV.png')
-
-
-# -------------------- END OF  OPTIMAL FLIGHT TO GIVEN TRACK DIRECTION ------------------------
-
 # webbrowser.open('http://ennuste.ilmailuliitto.fi/0/sounding10.curr.1000lst.d2.png')
 # webbrowser.open('map.html')
-
 
 print("SIMULATION COMPLETE")
 

@@ -50,6 +50,7 @@ def GUI(scenarios):
         airspeed = float(airspeed_entry.get())
         headwind_correction = float(headwind_correction_entry.get())
         AS_VV_correction = float(AS_VV_correction_entry.get())
+        drag_scale = float(drag_scale_entry.get())
         airmass_vv = float(airmass_vv_entry.get())
         glider_filname = file_label_entry.get()
         w0s = float(wind_0_speed_entry.get())
@@ -73,7 +74,7 @@ def GUI(scenarios):
             [2000,     factor*w3s,     w3d]
             ]
 
-        scenario = Scenario(scenario_number, ID, graph_color, glider_filname, start_altitude, end_altitude, airspeed, headwind_correction, AS_VV_correction, airmass_vv, winds)
+        scenario = Scenario(scenario_number, ID, graph_color, glider_filname, start_altitude, end_altitude, airspeed, headwind_correction, AS_VV_correction, drag_scale, airmass_vv, winds)
 
         scenarios[scenario_number] = scenario
 
@@ -143,6 +144,12 @@ def GUI(scenarios):
     AS_VV_correction_entry = tk.Entry(window)
     AS_VV_correction_entry.insert(0, "0")        # default value
     AS_VV_correction_entry.grid(row=row+3, column=column+1, padx=10, pady=10)
+    # Safety factor
+    label = tk.Label(window, text="Drag scale factor:")
+    label.grid(row=row+4, column=column+0, padx=10, pady=10)
+    drag_scale_entry = tk.Entry(window)
+    drag_scale_entry.insert(0, "1.05")        # default value
+    drag_scale_entry.grid(row=row+4, column=column+1, padx=10, pady=10)
 
     row = -1
     column = 3

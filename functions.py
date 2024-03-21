@@ -142,17 +142,17 @@ def find_best_glide_ratio(AS_list, VV_list):
             best_VV = VV_list[i]
     return best_AS, best_VV, best_GR
 
-def plotDragPolars(gliders, colors):
+def plotDragPolars(ax, gliders, colors):
     """
     Plot drag polars of input glider list.
 
     Args:
         Dictonary of gliders.
     """
-    plt.figure()  # Adjust the figure size if needed
+
     color_i = 0
     for name in gliders:
-        plt.plot(gliders[name].drag_polar_AS, gliders[name].drag_polar_VV, label=gliders[name].name, color=colors[color_i])
+        ax.plot(gliders[name].drag_polar_AS, gliders[name].drag_polar_VV, label=gliders[name].name, color=colors[color_i])
         # speeds = np.linspace(0, 300, 300)
         # VV = []
         # for speed in speeds:
@@ -160,22 +160,20 @@ def plotDragPolars(gliders, colors):
         # plt.plot(speeds, VV, label=gliders[name].name)  
 
         AS, VV, GR = find_best_glide_ratio(gliders[name].drag_polar_AS, gliders[name].drag_polar_VV)
-        plt.plot([0, 1.5*AS], [0, 1.5*VV], '--', color=colors[color_i])
-        plt.plot([AS, AS], [5.0, VV], '--', color=colors[color_i])
+        ax.plot([0, 1.5*AS], [0, 1.5*VV], '--', color=colors[color_i])
+        ax.plot([AS, AS], [5.0, VV], '--', color=colors[color_i])
 
         color_i += 1
 
-    plt.title('Drag polar')
-    plt.xlabel('Airspeed (km/h)')
-    plt.ylabel('Sink rate (m/s)')
-    plt.legend(loc='upper right')
-    plt.ylim(0, 4)
-    plt.xlim(0, 250)
-    plt.gca().invert_yaxis()
-    plt.grid(True)
-    # Save the plot as a PNG file
-    plt.savefig('results/drag_polars.png')
-    plt.show()
+    ax.set_title('Drag polar')
+    ax.set_xlabel('Airspeed (km/h)')
+    ax.set_label('Sink rate (m/s)')
+    ax.legend(loc='upper right')
+    # ax.ylim(0, 4)
+    # ax.xlim(0, 250)
+    ax.grid(True)
+    
+    return ax
 
 def plotAirfielCenteredLAR(color, ax, LAR, x, y, max_range_HDG, min_range_HDG):
     """

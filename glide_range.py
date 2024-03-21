@@ -98,19 +98,20 @@ plotDragPolars(gliders_dict)
 # Initialize figures where all skenarios will be plotted
 LAR_figure, LAR_figure_ax = plt.subplots()  # Create LAR figure
 
-for ID in scenarios:    # Go through every scenario
+for number in scenarios:    # Go through every scenario
 
   # ---------------------------------- SCENARIO PARAMETERS --------------------------------------
-  selected_glider = gliders_dict[scenarios[ID].glider_file]
-  end_altitude = scenarios[ID].end_altitude
-  start_altitude = scenarios[ID].start_altitude
-  vertical_airmass_velocity = scenarios[ID].airmass_vv
-  winds = scenarios[ID].winds   # Winds [(altitude_meters, speed_m/s, direction_degrees_TRUE)]
+  selected_glider = gliders_dict[scenarios[number].glider_file]
+  graph_color = scenarios[number].color
+  end_altitude = scenarios[number].end_altitude
+  headwind_correction = scenarios[number].headwind_correction
+  start_altitude = scenarios[number].start_altitude
+  vertical_airmass_velocity = scenarios[number].airmass_vv
+  winds = scenarios[number].winds   # Winds [(altitude_meters, speed_m/s, direction_degrees_TRUE)]
 
   airfield_location = EFJM
   dT = 1                        #s
 
-  # TODO: selected airspeed logic
 
   # print('SELECTED GLIDER:')
   # print('Name: ', selected_glider.name)
@@ -143,7 +144,7 @@ for ID in scenarios:    # Go through every scenario
     x_pos = 0
     y_pos = 0
 
-    #simulation of flight to heading
+    # Simulation of flight to given ground track direction
     while altitude > end_altitude:    # TODO: if positive VV, prevent infinite range 
 
       # linear interpolation
@@ -151,15 +152,23 @@ for ID in scenarios:    # Go through every scenario
                                             left=None, right=None, period=None)
       wind_direction_at_altitude = numpy.interp(altitude, winds_altitudes, winds_directions,
                                             left=None, right=None, period=None)
-      
-      # TODO: select speed to fly
-      airspeed = selected_glider.best_glide_at/3.6     #m/s
 
-      # calculate vertical velocity
-      total_VV = vertical_airmass_velocity - selected_glider.sinkAtAirspeed(airspeed)
 
       # calculate wind components. Positive alongtrack_wind = tailwind, positive crosstrack_wind = wind from left
       alongtrack_wind, crosstrack_wind = wind_components(wind_speed_at_altitude, wind_direction_at_altitude, ground_track)
+
+      # TODO: select speed to fly
+      airspeed = selected_glider.best_glide_at/3.6     #m/s
+
+      # add half of headwind
+      if headwind_correction > 0:
+        if alongtrack_wind < 0:
+          airspeed += headwind_correction*abs(alongtrack_wind)
+
+            # calculate vertical velocity
+          
+      
+      total_VV = vertical_airmass_velocity - selected_glider.sinkAtAirspeed(airspeed*3.6)
 
       # GS calculation
       GS = alongtrack_wind + math.sqrt(airspeed**2 - crosstrack_wind**2)
@@ -183,7 +192,7 @@ for ID in scenarios:    # Go through every scenario
 
   max_range_HDG, min_range_HDG = max_min_range_heading(glide_LAR)   # Find direction of maximum and minimum range
 
-  LAR_figure_ax = plotAirfielCenteredLAR(LAR_figure_ax, glide_LAR, X_pos_list, y_pos_list, max_range_HDG, min_range_HDG)
+  LAR_figure_ax = plotAirfielCenteredLAR(graph_color, LAR_figure_ax, glide_LAR, X_pos_list, y_pos_list, max_range_HDG, min_range_HDG)
 
   # -------------------------- END OF AIRFIELD CENTERED GLIDER RANGE ----------------------------
 

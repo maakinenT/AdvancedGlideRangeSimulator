@@ -1,17 +1,30 @@
 import tkinter as tk
 from tkinter import filedialog
+from tkinter import colorchooser
 
 from scenario import Scenario
 
 def GUI(scenarios):
-  
-    def on_wind_unit_select(event):
-        selected_wind_unit.set(selected_wind_unit.get())  # Update the label with the selected option
 
     def read_input_data():
+        if len(scenarios) == 0:
+            scenario_number = 0
+        else:
+            # Get the last key-value pair from the dictionary
+            last_key = list(scenarios.keys())[-1]
+            scenario_number = last_key + 1
+
         ID = str(ID_entry.get())
+
+        color = str(selected_color_entry.get())
+        # Convert text representation to a tuple using eval() function
+        rgb_color_tuple = eval(color)
+        # Convert RGB values to values between 0 and 1
+        graph_color = (rgb_color_tuple[0] / 255, rgb_color_tuple[1] / 255, rgb_color_tuple[2] / 255)
+
         start_altitude = float(start_altitude_entry.get())
         end_altitude = float(end_altitude_entry.get())
+        headwind_correction = float(headwind_correction_entry.get())
         airmass_vv = float(airmass_vv_entry.get())
         glider_filname = file_label_entry.get()
         w0s = float(wind_0_speed_entry.get())
@@ -35,9 +48,12 @@ def GUI(scenarios):
             [2000,     factor*w3s,     w3d]
             ]
 
-        scenario = Scenario(ID, glider_filname, start_altitude, end_altitude, airmass_vv, winds)
+        scenario = Scenario(scenario_number, ID, graph_color, glider_filname, start_altitude, end_altitude, headwind_correction, airmass_vv, winds)
 
-        scenarios[ID] = scenario
+        scenarios[scenario_number] = scenario
+
+        print("Scenario name: " + str(scenario.ID) + ", number: " + str(scenario.scenario_number))
+        # print(scenarios)
         # ID_entry.insert(0, ID_entry.get()+'1')    #autoupdate scanario nro
 
     def select_file():
@@ -48,7 +64,15 @@ def GUI(scenarios):
             file_label_entry.insert(0, f"{name}")
             # file_label.config(text=f"Selected file: {name}")
 
+    def choose_color():
+        color = colorchooser.askcolor(title="Choose color")
+        if color[1]:  # Check if a color was selected
+            selected_color_entry.config(bg=color[1])  # Set the background color of the label
+            selected_color_entry.delete(0, tk.END)
+            selected_color_entry.insert(0, f"{color[0]}")
 
+    def on_wind_unit_select(event):
+        selected_wind_unit.set(selected_wind_unit.get())  # Update the label with the selected option
 
 
     # Create the main window
@@ -69,6 +93,18 @@ def GUI(scenarios):
     end_altitude_entry = tk.Entry(window)
     end_altitude_entry.insert(0, "300")        # default value
     end_altitude_entry.grid(row=row+1, column=column+1, padx=10, pady=10)
+
+    row = 3
+    column = 0  
+    # Speed selaction logic
+    label = tk.Label(window, text="Airspeed selection logic:")
+    label.grid(row=row+0, column=column+0, padx=10, pady=10)
+    # Speed selection logic
+    label = tk.Label(window, text="Headwind correction factor:")
+    label.grid(row=row+1, column=column+0, padx=10, pady=10)
+    headwind_correction_entry = tk.Entry(window)
+    headwind_correction_entry.insert(0, "0.5")        # default value
+    headwind_correction_entry.grid(row=row+1, column=column+1, padx=10, pady=10)
 
     row = -1
     column = 3
@@ -133,7 +169,7 @@ def GUI(scenarios):
     label = tk.Label(window, text="Scenario ID:")
     label.grid(row=row+0, column=column+0, padx=10, pady=10)
     ID_entry= tk.Entry(window)
-    ID_entry.insert(0, "0")        # default value
+    #ID_entry.insert(0, "")        # default value
     ID_entry.grid(row=row+0, column=column+1, padx=10, pady=10)
 
     # Create a button to open the file explorer
@@ -146,9 +182,16 @@ def GUI(scenarios):
     file_label_entry = tk.Entry(window)
     file_label_entry.grid(row=9, column=1, padx=10, pady=10)
 
+    # Create a button to open the color chooser
+    choose_color_button = tk.Button(window, text="Choose Color", command=choose_color)
+    choose_color_button.grid(row=10, column=0, padx=10, pady=10)
+    # Create a label to display the selected color
+    selected_color_entry = tk.Entry(window)
+    selected_color_entry.grid(row=10, column=1, padx=10, pady=10)
+
     # Create scenario
     calculate_button = tk.Button(window, text="Create scenario", command=read_input_data)
-    calculate_button.grid(row=10, column=3, padx=10, pady=10)
+    calculate_button.grid(row=11, column=3, padx=10, pady=10)
 
     # Run the main event loop
     window.mainloop()

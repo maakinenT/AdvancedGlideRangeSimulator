@@ -153,7 +153,7 @@ def plotDragPolars(gliders):
     plt.savefig('results/drag_polars.png')
     plt.show()
 
-def plotAirfielCenteredLAR(ax, LAR, x, y, max_range_HDG, min_range_HDG):
+def plotAirfielCenteredLAR(color, ax, LAR, x, y, max_range_HDG, min_range_HDG):
     """
     Plot Airfield centered LAR.
 
@@ -162,9 +162,9 @@ def plotAirfielCenteredLAR(ax, LAR, x, y, max_range_HDG, min_range_HDG):
     """
     # plt.figure(figsize=(8, 6))  # Adjust the figure size if needed
     ax.plot(0, 0, "o")
-    ax.plot(x, y, "r")  # 
-    ax.plot([0, LAR[max_range_HDG][0]/1000], [0, LAR[max_range_HDG][1]/1000], "r--", label=str("max: "+"{:.1f}".format(math.sqrt(LAR[max_range_HDG][0]**2 + LAR[max_range_HDG][1]**2)/1000)+" km"))
-    ax.plot([0, LAR[min_range_HDG][0]/1000], [0, LAR[min_range_HDG][1]/1000], "r-.", label=str("max: "+"{:.1f}".format(math.sqrt(LAR[min_range_HDG][0]**2 + LAR[min_range_HDG][1]**2)/1000)+" km"))
+    ax.plot(x, y, color=color)  # 
+    ax.plot([0, LAR[max_range_HDG][0]/1000], [0, LAR[max_range_HDG][1]/1000], "--", label=str("max: "+"{:.1f}".format(math.sqrt(LAR[max_range_HDG][0]**2 + LAR[max_range_HDG][1]**2)/1000)+" km"), color=color)
+    ax.plot([0, LAR[min_range_HDG][0]/1000], [0, LAR[min_range_HDG][1]/1000], "-.", label=str("max: "+"{:.1f}".format(math.sqrt(LAR[min_range_HDG][0]**2 + LAR[min_range_HDG][1]**2)/1000)+" km"), color=color)
     ax.set_title('Airfield centered glide range')
     ax.set_xlabel('(km)')
     ax.set_ylabel('(km)')

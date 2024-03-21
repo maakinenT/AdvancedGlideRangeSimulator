@@ -3,8 +3,31 @@ from tkinter import filedialog
 from tkinter import colorchooser
 
 from scenario import Scenario
+from functions import rgb_to_hex
+
+def show_parameters(objects):
+    popup = tk.Toplevel()
+    popup.title("Scenario parameters")
+
+    text_widget = tk.Text(popup, wrap="word", width=100, height=50)
+    text_widget.pack(padx=10, pady=10)
+
+
+    for i, (key, obj) in enumerate(objects.items()):
+        text_widget.insert(tk.END, f"Scenario: {key}\n")
+        graph_color = obj.color
+        color = rgb_to_hex(graph_color)
+        tag_name = f"color_{i}"  # Create a unique tag name for each object
+        text_widget.tag_configure(tag_name, foreground=color)  # Define the tag with custom color
+
+        for attr, value in vars(obj).items():
+            text_widget.insert(tk.END, f"{attr}: {value}\n", tag_name)  # Apply the tag to set the text color
+        text_widget.insert(tk.END, "\n")
 
 def GUI(scenarios):
+
+    def show_scenarios():
+        show_parameters(scenarios)
 
     def read_input_data():
         if len(scenarios) == 0:
@@ -24,7 +47,9 @@ def GUI(scenarios):
 
         start_altitude = float(start_altitude_entry.get())
         end_altitude = float(end_altitude_entry.get())
+        airspeed = float(airspeed_entry.get())
         headwind_correction = float(headwind_correction_entry.get())
+        AS_VV_correction = float(AS_VV_correction_entry.get())
         airmass_vv = float(airmass_vv_entry.get())
         glider_filname = file_label_entry.get()
         w0s = float(wind_0_speed_entry.get())
@@ -48,11 +73,12 @@ def GUI(scenarios):
             [2000,     factor*w3s,     w3d]
             ]
 
-        scenario = Scenario(scenario_number, ID, graph_color, glider_filname, start_altitude, end_altitude, headwind_correction, airmass_vv, winds)
+        scenario = Scenario(scenario_number, ID, graph_color, glider_filname, start_altitude, end_altitude, airspeed, headwind_correction, AS_VV_correction, airmass_vv, winds)
 
         scenarios[scenario_number] = scenario
 
         print("Scenario name: " + str(scenario.ID) + ", number: " + str(scenario.scenario_number))
+
         # print(scenarios)
         # ID_entry.insert(0, ID_entry.get()+'1')    #autoupdate scanario nro
 
@@ -97,14 +123,26 @@ def GUI(scenarios):
     row = 3
     column = 0  
     # Speed selaction logic
-    label = tk.Label(window, text="Airspeed selection logic:")
+    label = tk.Label(window, text="Airspeed selection:")
     label.grid(row=row+0, column=column+0, padx=10, pady=10)
     # Speed selection logic
-    label = tk.Label(window, text="Headwind correction factor:")
+    label = tk.Label(window, text="Airspeed (0=best L/D):")
     label.grid(row=row+1, column=column+0, padx=10, pady=10)
+    airspeed_entry = tk.Entry(window)
+    airspeed_entry.insert(0, "0")        # default value
+    airspeed_entry.grid(row=row+1, column=column+1, padx=10, pady=10)
+    # Speed selection logic
+    label = tk.Label(window, text="Headwind correction factor:")
+    label.grid(row=row+2, column=column+0, padx=10, pady=10)
     headwind_correction_entry = tk.Entry(window)
-    headwind_correction_entry.insert(0, "0.5")        # default value
-    headwind_correction_entry.grid(row=row+1, column=column+1, padx=10, pady=10)
+    headwind_correction_entry.insert(0, "0")        # default value
+    headwind_correction_entry.grid(row=row+2, column=column+1, padx=10, pady=10)
+    # Speed selection logic
+    label = tk.Label(window, text="AS increase due VV (km/h / m/s):")
+    label.grid(row=row+3, column=column+0, padx=10, pady=10)
+    AS_VV_correction_entry = tk.Entry(window)
+    AS_VV_correction_entry.insert(0, "0")        # default value
+    AS_VV_correction_entry.grid(row=row+3, column=column+1, padx=10, pady=10)
 
     row = -1
     column = 3
@@ -120,41 +158,43 @@ def GUI(scenarios):
     wind_unit_select = tk.OptionMenu(window, selected_wind_unit, *options, command=on_wind_unit_select)
     wind_unit_select.grid(row=row+1, column=column+2, padx=10, pady=10)
 
+    default_direction = 0
+    default_speed = 0
     # SFC wind
     label = tk.Label(window, text="SFC wind:")
     label.grid(row=row+2, column=column+0, padx=10, pady=10)
     wind_0_direction_entry = tk.Entry(window, width=5)
-    wind_0_direction_entry.insert(0, "0")        # default value
+    wind_0_direction_entry.insert(0, default_direction)        # default value
     wind_0_direction_entry.grid(row=row+2, column=column+1, padx=10, pady=10)
     wind_0_speed_entry = tk.Entry(window, width=5)
-    wind_0_speed_entry.insert(0, "3")        # default value
+    wind_0_speed_entry.insert(0, default_speed)        # default value
     wind_0_speed_entry.grid(row=row+2, column=column+2, padx=10, pady=10)
     # 500m wind
     label = tk.Label(window, text="500m wind:")
     label.grid(row=row+3, column=column+0, padx=10, pady=10)
     wind_1_direction_entry = tk.Entry(window, width=5)
-    wind_1_direction_entry.insert(0, "30")        # default value
+    wind_1_direction_entry.insert(0, default_direction)        # default value
     wind_1_direction_entry.grid(row=row+3, column=column+1, padx=10, pady=10)
     wind_1_speed_entry = tk.Entry(window, width=5)
-    wind_1_speed_entry.insert(0, "10")        # default value
+    wind_1_speed_entry.insert(0, default_speed)        # default value
     wind_1_speed_entry.grid(row=row+3, column=column+2, padx=10, pady=10)
     # 1000m wind
     label = tk.Label(window, text="1km wind:")
     label.grid(row=row+4, column=column+0, padx=10, pady=10)
     wind_2_direction_entry = tk.Entry(window, width=5)
-    wind_2_direction_entry.insert(0, "60")        # default value
+    wind_2_direction_entry.insert(0, default_direction)        # default value
     wind_2_direction_entry.grid(row=row+4, column=column+1, padx=10, pady=10)
     wind_2_speed_entry = tk.Entry(window, width=5)
-    wind_2_speed_entry.insert(0, "12")        # default value
+    wind_2_speed_entry.insert(0, default_speed)        # default value
     wind_2_speed_entry.grid(row=row+4, column=column+2, padx=10, pady=10)
     # 2000m wind
     label = tk.Label(window, text="2km wind:")
     label.grid(row=row+5, column=column+0, padx=10, pady=10)
     wind_3_direction_entry = tk.Entry(window, width=5)
-    wind_3_direction_entry.insert(0, "90")        # default value
+    wind_3_direction_entry.insert(0, default_direction)        # default value
     wind_3_direction_entry.grid(row=row+5, column=column+1, padx=10, pady=10)
     wind_3_speed_entry = tk.Entry(window, width=5)
-    wind_3_speed_entry.insert(0, "15")        # default value
+    wind_3_speed_entry.insert(0, default_speed)        # default value
     wind_3_speed_entry.grid(row=row+5, column=column+2, padx=10, pady=10)
     # Airmass vertical velocity
     label = tk.Label(window, text="Airmass VV:")
@@ -190,8 +230,12 @@ def GUI(scenarios):
     selected_color_entry.grid(row=10, column=1, padx=10, pady=10)
 
     # Create scenario
-    calculate_button = tk.Button(window, text="Create scenario", command=read_input_data)
-    calculate_button.grid(row=11, column=3, padx=10, pady=10)
+    create_scenario_button = tk.Button(window, text="Create scenario", command=read_input_data)
+    create_scenario_button.grid(row=11, column=1, padx=10, pady=10)
+
+    # Show scenario
+    show_scenarios_button = tk.Button(window, text="Show scenarios", command=show_scenarios)
+    show_scenarios_button.grid(row=11, column=2, padx=10, pady=10)
 
     # Run the main event loop
     window.mainloop()

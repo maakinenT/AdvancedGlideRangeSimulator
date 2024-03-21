@@ -4,6 +4,7 @@ import math
 import csv
 import matplotlib.pyplot as plt
 import gmplot
+import numpy as np
 
 def printLogo():
     print("    _       _                               _    ____ _ _     _              ")
@@ -141,7 +142,13 @@ def plotDragPolars(gliders):
     """
     plt.figure(figsize=(8, 6))  # Adjust the figure size if needed
     for name in gliders:
-        plt.plot(gliders[name].drag_polar_AS, gliders[name].drag_polar_VV, label=gliders[name].name)  # Plot points as circles
+        plt.plot(gliders[name].drag_polar_AS, gliders[name].drag_polar_VV, label=gliders[name].name)
+        # speeds = np.linspace(0, 300, 300)
+        # VV = []
+        # for speed in speeds:
+        #     VV.append(gliders[name].sinkAtAirspeed(speed))
+        # plt.plot(speeds, VV, label=gliders[name].name)  
+
     plt.title('Drag polar')
     plt.xlabel('Airspeed (km/h)')
     plt.ylabel('Sink rate (m/s)')
@@ -164,7 +171,7 @@ def plotAirfielCenteredLAR(color, ax, LAR, x, y, max_range_HDG, min_range_HDG):
     ax.plot(0, 0, "o")
     ax.plot(x, y, color=color)  # 
     ax.plot([0, LAR[max_range_HDG][0]/1000], [0, LAR[max_range_HDG][1]/1000], "--", label=str("max: "+"{:.1f}".format(math.sqrt(LAR[max_range_HDG][0]**2 + LAR[max_range_HDG][1]**2)/1000)+" km"), color=color)
-    ax.plot([0, LAR[min_range_HDG][0]/1000], [0, LAR[min_range_HDG][1]/1000], "-.", label=str("max: "+"{:.1f}".format(math.sqrt(LAR[min_range_HDG][0]**2 + LAR[min_range_HDG][1]**2)/1000)+" km"), color=color)
+    ax.plot([0, LAR[min_range_HDG][0]/1000], [0, LAR[min_range_HDG][1]/1000], "-.", label=str("min: "+"{:.1f}".format(math.sqrt(LAR[min_range_HDG][0]**2 + LAR[min_range_HDG][1]**2)/1000)+" km"), color=color)
     ax.set_title('Airfield centered glide range')
     ax.set_xlabel('(km)')
     ax.set_ylabel('(km)')
@@ -172,8 +179,50 @@ def plotAirfielCenteredLAR(color, ax, LAR, x, y, max_range_HDG, min_range_HDG):
     ax.grid(True)
     ax.axis('equal')
     
-    
     return ax
+
+
+def plotDesiredTrackValues(color, axs, glide_values, HDG):
+    
+    time = glide_values[0]
+    airspeed = glide_values[1]
+    groundspeed = glide_values[2]
+    vv = glide_values[3]
+    altitude = glide_values[4]
+    LperD = glide_values[5]
+
+    axs[0].plot(altitude, time, "-", color=color)
+    axs[0].set_xlabel('Altitude (m)')
+    axs[0].set_ylabel('time (s)')
+    axs[0].grid(True)
+    
+    axs[1].plot(altitude, airspeed, "-", color=color)
+    axs[1].set_xlabel('Altitude (m)')
+    axs[1].set_ylabel('AS (km/h)')
+    axs[1].grid(True)
+
+    axs[2].plot(altitude, groundspeed, "-", color=color)
+    axs[2].set_xlabel('Altitude (m)')
+    axs[2].set_ylabel('GS (km/h)')
+    axs[2].grid(True)
+
+    axs[3].plot(altitude, vv, "-", color=color)
+    axs[3].set_xlabel('Altitude (m)')
+    axs[3].set_ylabel('VV (m/s)')
+    axs[3].grid(True)
+
+    axs[4].plot(altitude, LperD, "-", color=color)
+    axs[4].set_xlabel('Altitude (m)')
+    axs[4].set_ylabel('Glide ratio')
+    axs[4].grid(True)
+
+    # axs[4].plot(time, airspeed, "-", color=color)
+    # axs[4].set_xlabel('Altitude (m)')
+    # axs[4].set_ylabel('Airspeed (km/h)')
+    # axs[4].grid(True)
+    
+
+    return axs
 
 def draw_arrow(gmap, start_lat, start_lon, direction, wind_speed, radius, name, color='red'):
     radius = wind_speed/10*radius
@@ -189,3 +238,11 @@ def draw_arrow(gmap, start_lat, start_lon, direction, wind_speed, radius, name, 
     gmap.plot([right_lat, end_lat], [right_lon, end_lon], color=color, edge_width=2)
     gmap.marker(end_lat, end_lon, color=color, title=name+" {:.0f} degT, {:.1f} m/s".format(direction, wind_speed), info_window=name+" {:.0f} degT, {:.1f} m/s".format(direction, wind_speed))
     # gmap.plot([mid_lat, end_lat], [mid_lng, end_lng], color=color, edge_width=5)
+
+
+def rgb_to_hex(rgb):
+    """Convert RGB color values to hexadecimal color code."""
+    scaled_rgb = tuple(int(255 * c) for c in rgb)
+    hex_color = '#{:02x}{:02x}{:02x}'.format(*scaled_rgb)
+    return hex_color
+

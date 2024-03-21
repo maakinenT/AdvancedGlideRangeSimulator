@@ -28,6 +28,7 @@ from functions import polarToCartesian
 from functions import read_points_from_csv
 from functions import plotDragPolars
 from functions import plotAirfielCenteredLAR
+from functions import plotDesiredTrackValues
 from functions import printLogo
 from functions import wind_components
 from functions import draw_arrow
@@ -52,7 +53,6 @@ scenarios = {}
 
 # --------------------------------------- GUI -------------------------------------------------
 GUI(scenarios)    # store GUI inout in scenario dict (global)
-# TODO: manage scenarios with csv file
 # ------------------------------------ END OF GUI --------------------------------------------
 
 
@@ -98,13 +98,21 @@ plotDragPolars(gliders_dict)
 # Initialize figures where all skenarios will be plotted
 LAR_figure, LAR_figure_ax = plt.subplots()  # Create LAR figure
 
+desired_track_figure, desired_track_figure_ax = plt.subplots(5,1)  # Create desired track heading values figure
+for ax in desired_track_figure_ax:
+      ax.invert_xaxis()
+
 for number in scenarios:    # Go through every scenario
 
   # ---------------------------------- SCENARIO PARAMETERS --------------------------------------
   selected_glider = gliders_dict[scenarios[number].glider_file]
   graph_color = scenarios[number].color
+  # Convert RGB values to hexadecimal color code
+  hex_color = "#{:02x}{:02x}{:02x}".format(int(graph_color[0]*255), int(graph_color[1]*255), int(graph_color[2]*255))
   end_altitude = scenarios[number].end_altitude
+  selected_airspeed = scenarios[number].base_airspeed
   headwind_correction = scenarios[number].headwind_correction
+  AS_due_VV_correction = scenarios[number].AS_due_VV_correction
   start_altitude = scenarios[number].start_altitude
   vertical_airmass_velocity = scenarios[number].airmass_vv
   winds = scenarios[number].winds   # Winds [(altitude_meters, speed_m/s, direction_degrees_TRUE)]
@@ -134,6 +142,7 @@ for number in scenarios:    # Go through every scenario
   # SIMULATION
 
   glide_LAR = {}
+  glide_values = {}
   X_pos_list = []
   y_pos_list = []
 
@@ -143,6 +152,12 @@ for number in scenarios:    # Go through every scenario
     time = 0
     x_pos = 0
     y_pos = 0
+    time_list = []
+    airspeed_list = []
+    groundspeed_list = []
+    vv_list = []
+    altitude_list = []
+    LperD_list = []
 
     # Simulation of flight to given ground track direction
     while altitude > end_altitude:    # TODO: if positive VV, prevent infinite range 
@@ -158,20 +173,26 @@ for number in scenarios:    # Go through every scenario
       alongtrack_wind, crosstrack_wind = wind_components(wind_speed_at_altitude, wind_direction_at_altitude, ground_track)
 
       # TODO: select speed to fly
-      airspeed = selected_glider.best_glide_at/3.6     #m/s
+      if selected_airspeed <= 0:
+        airspeed = selected_glider.best_glide_at/3.6     #m/s
+      else:
+        airspeed = selected_airspeed/3.6                 #m/s
 
-      # add half of headwind
-      if headwind_correction > 0:
-        if alongtrack_wind < 0:
-          airspeed += headwind_correction*abs(alongtrack_wind)
+      # add x % of headwind
+      if alongtrack_wind < 0:       # headwind
+        airspeed += headwind_correction*abs(alongtrack_wind)
 
-            # calculate vertical velocity
-          
-      
+      if vertical_airmass_velocity < 0:
+        airspeed += -1*vertical_airmass_velocity*AS_due_VV_correction/3.6
+
+     # calculate vertical velocity    
       total_VV = vertical_airmass_velocity - selected_glider.sinkAtAirspeed(airspeed*3.6)
 
       # GS calculation
-      GS = alongtrack_wind + math.sqrt(airspeed**2 - crosstrack_wind**2)
+      if airspeed**2 - crosstrack_wind**2 < 0:
+        GS = 0
+      else:
+        GS = alongtrack_wind + math.sqrt(airspeed**2 - crosstrack_wind**2)
 
       # x_vel and y_vel calculation
       x_vel, y_vel = polarToCartesian(GS, ground_track)
@@ -182,10 +203,22 @@ for number in scenarios:    # Go through every scenario
       y_pos -= y_vel*dT         # from the limit of glide range towards airfied ==> minus sign
       time += dT
 
+      # Geometric glide ratio calculation
+      LperD = -GS/total_VV
+  
+      time_list.append(time)
+      airspeed_list.append(airspeed*3.6)
+      groundspeed_list.append(GS*3.6)
+      vv_list.append(total_VV)
+      altitude_list.append(altitude)
+      LperD_list.append(LperD)
+
+
     # save this track LAR data to dict
     glide_LAR[ground_track] = [x_pos, y_pos, time]
     X_pos_list.append(x_pos/1000)
     y_pos_list.append(y_pos/1000)
+    glide_values[ground_track] = [time_list, airspeed_list, groundspeed_list, vv_list, altitude_list, LperD_list]
 
   X_pos_list.append(X_pos_list[0])    #close LAR circle
   y_pos_list.append(y_pos_list[0])    #close LAR circle
@@ -193,6 +226,9 @@ for number in scenarios:    # Go through every scenario
   max_range_HDG, min_range_HDG = max_min_range_heading(glide_LAR)   # Find direction of maximum and minimum range
 
   LAR_figure_ax = plotAirfielCenteredLAR(graph_color, LAR_figure_ax, glide_LAR, X_pos_list, y_pos_list, max_range_HDG, min_range_HDG)
+
+  desired_track_HDG = min_range_HDG
+  desired_track_figure_ax = plotDesiredTrackValues(graph_color, desired_track_figure_ax, glide_values[desired_track_HDG], desired_track_HDG)
 
   # -------------------------- END OF AIRFIELD CENTERED GLIDER RANGE ----------------------------
 
@@ -235,13 +271,13 @@ LAT, LON = relativePosToCoordinates(*airfield_location, glide_LAR[0][0], glide_L
 LAT_list.append(LAT)
 LON_list.append(LON)
 # Plot the polygon without fill
-gmap.plot(LAT_list, LON_list, color='r', edge_width=2)
+gmap.plot(LAT_list, LON_list, color=hex_color , edge_width=2)
 
 #draw min ditance line
 min_distance_point = relativePosToCoordinates(*airfield_location, glide_LAR[min_range_HDG][0], glide_LAR[min_range_HDG][1])
 gmap.plot([airfield_location[0], min_distance_point[0]],
-          [airfield_location[1], min_distance_point[1]], color='r', edge_width=2)
-gmap.marker(*min_distance_point, title='Min distance {:.1f} km, HDG {:.0f} degT'.format(math.sqrt(glide_LAR[min_range_HDG][0]**2 + glide_LAR[min_range_HDG][1]**2)/1000, min_range_HDG))
+          [airfield_location[1], min_distance_point[1]], color=hex_color, edge_width=2)
+gmap.marker(*min_distance_point, title='Min distance {:.1f} km, HDG {:.0f} degT'.format(math.sqrt(glide_LAR[min_range_HDG][0]**2 + glide_LAR[min_range_HDG][1]**2)/1000, min_range_HDG), color=hex_color)
 
 # WIND ARROWS
 # wind arrow offset from airfield
@@ -265,6 +301,7 @@ gmap.draw('results/map.html')
 
 # webbrowser.open('http://ennuste.ilmailuliitto.fi/0/sounding10.curr.1000lst.d2.png')
 # webbrowser.open('map.html')
+
 
 print("SIMULATION COMPLETE")
 

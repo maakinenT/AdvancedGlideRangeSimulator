@@ -18,6 +18,7 @@ import numpy
 import webbrowser
 import matplotlib.pyplot as plt
 import math
+import numpy as np
 
 # Import Classes and functions
 from Glider import Glider
@@ -29,6 +30,8 @@ from functions import read_points_from_csv
 from functions import plotDragPolars
 from functions import plotAirfielCenteredLAR
 from functions import plotDesiredTrackValues
+from functions import plotOptimalFlightValues
+from functions import plotPoints
 from functions import printLogo
 from functions import wind_components
 from functions import draw_arrow
@@ -298,6 +301,85 @@ draw_arrow(gmap, start_lat, start_lon, winds_directions[3], winds_speeds[3], arr
 gmap.draw('results/map.html')
 
 # --------------------------------- END OF MAP PLOTTER ----------------------------------------
+
+
+
+# ------------------------- OPTIMAL FLIGHT TO GIVEN TRACK DIRECTION ---------------------------
+number = 0  # optimum flight calculation for fist scenario
+
+selected_glider = gliders_dict[scenarios[number].glider_file]
+
+track_HDG = 0
+
+vv_airmass_list = np.linspace(0,-3, 50)
+airspeed_list = np.linspace(70, 180, 500)       #km/h
+
+# Initialize figure
+figure, figure_ax = plt.subplots()
+
+best_GR_AS_VV_list = []
+
+for vv_airmass in vv_airmass_list:
+  glide_ratio_list = []
+  best_GR = 0
+  best_speed = 0
+  best_total_VV = 0
+
+  for airspeed in airspeed_list:
+
+    # calculate vertical velocity    
+    total_VV = vv_airmass - selected_glider.sinkAtAirspeed(airspeed)
+
+    # Ground speed calculation
+    GS = airspeed
+
+    # Geometric glide ratio calculation
+    GR = -GS/3.6/total_VV
+
+    if GR > best_GR:
+      best_GR = GR
+      best_speed = airspeed
+      best_total_VV = total_VV
+
+    glide_ratio_list.append(GR)
+
+  best_GR_AS_VV_list.append([vv_airmass, best_GR, best_speed, best_total_VV])
+
+  legend = "VV = {:.1f} m/s".format(vv_airmass)
+  figure_ax = plotPoints(figure_ax, airspeed_list, glide_ratio_list, "AS (km/h)", "GR", legend)
+
+best_VV = []
+best_GR = []
+best_AS = []
+best_VV_tot = []
+for list in best_GR_AS_VV_list:
+  best_VV.append(list[0])
+  best_GR.append(list[1])
+  best_AS.append(list[2])
+  best_VV_tot.append(list[3])
+
+figure_ax = plotPoints(figure_ax, best_AS, best_GR, "AS (km/h)", "GR", "max")
+
+
+# Initialize figure
+figure2, figure2_ax = plt.subplots(4,1)
+figure2_ax = plotOptimalFlightValues(figure2_ax, best_AS, best_VV, best_GR, best_VV_tot)
+
+
+
+plt.show()  # Show lar figure
+# Save the plot as a PNG file
+figure.savefig('results/optimum_speed_vs_VV.png')
+
+
+
+
+
+
+
+
+
+# -------------------- END OF  OPTIMAL FLIGHT TO GIVEN TRACK DIRECTION ------------------------
 
 # webbrowser.open('http://ennuste.ilmailuliitto.fi/0/sounding10.curr.1000lst.d2.png')
 # webbrowser.open('map.html')

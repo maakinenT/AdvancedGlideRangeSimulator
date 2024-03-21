@@ -1,4 +1,5 @@
 import numpy
+from scipy.interpolate import interp1d
 
 # Glider.py
 class Glider:
@@ -14,5 +15,12 @@ class Glider:
 
     def sinkAtAirspeed(self, AS):
         vv = numpy.interp(AS, self.drag_polar_AS, self.drag_polar_VV, left=None, right=None, period=None)
+
+        # # Perform second-order interpolation
+        # f = interp1d(self.drag_polar_AS, self.drag_polar_VV, kind='quadratic')
+
+        # # Interpolate the values
+        # vv = f(AS)
+
         return vv
     

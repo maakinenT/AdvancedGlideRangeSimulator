@@ -116,7 +116,7 @@ def read_points_from_csv(csv_file):
 
     return data, points
 
-def plotPoints(x_points, y_points,x_label, y_label):
+def plotPoints(ax, x_points, y_points,x_label, y_label, legend):
     """
     Plot x, y points.
 
@@ -124,14 +124,13 @@ def plotPoints(x_points, y_points,x_label, y_label):
         x_points (list): List of x coordinates.
         y_points (list): List of y coordinates.
     """
-    plt.figure(figsize=(8, 6))  # Adjust the figure size if needed
-    plt.plot(x_points, y_points, color='blue')  # Plot points as circles
-    plt.title('X-Y Points Plot')
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.gca().invert_yaxis()
-    plt.grid(True)
-    plt.show()
+    ax.plot(x_points, y_points, label=legend) 
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.legend(loc='upper right')
+    ax.grid(True)
+
+    return ax
 
 def plotDragPolars(gliders):
     """
@@ -221,8 +220,28 @@ def plotDesiredTrackValues(color, axs, glide_values, HDG):
     # axs[4].set_ylabel('Airspeed (km/h)')
     # axs[4].grid(True)
     
-
     return axs
+
+def plotOptimalFlightValues(axs, best_AS, best_VV, best_GR, best_VV_tot):
+    axs[0].plot(best_AS, best_VV, "-")
+    axs[0].set_xlabel('AS (km/h)')
+    axs[0].set_ylabel('airmass VV (m/s)')
+    axs[0].grid(True)
+
+    axs[1].plot(best_AS, best_GR, "-")
+    axs[1].set_xlabel('AS (km/h)')
+    axs[1].set_ylabel('GR')
+    axs[1].grid(True)
+
+    axs[2].plot(best_AS, best_VV_tot, "-")
+    axs[2].set_xlabel('AS (km/h)')
+    axs[2].set_ylabel('airmass VV (m/s)')
+    axs[2].grid(True)
+
+    axs[3].plot(best_VV_tot, best_GR, "-")
+    axs[3].set_xlabel('VV tot (m/s)')
+    axs[3].set_ylabel('GR')
+    axs[3].grid(True)
 
 def draw_arrow(gmap, start_lat, start_lon, direction, wind_speed, radius, name, color='red'):
     radius = wind_speed/10*radius

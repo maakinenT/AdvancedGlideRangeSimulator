@@ -62,8 +62,11 @@ GUI(scenarios)    # store GUI inout in scenario dict (global)
 
 # ------------------------------------- CREATING GLIDERS --------------------------------------
 glider_filenames = []
+color_list = []
+
 for ID in scenarios:
   glider_filenames.append(scenarios[ID].glider_file)
+  color_list.append(scenarios[ID].color)
 
 # Create a dict of gliders
 gliders_dict = {}
@@ -92,7 +95,7 @@ for file_name in glider_filenames:
   gliders_dict[file_name] = glider        #use filename as key
 
 # plot drag polar for every selected glider
-plotDragPolars(gliders_dict)
+plotDragPolars(gliders_dict, color_list)
 # -------------------------------- END OF CREATING GLIDERS -------------------------------------
 
 
@@ -305,17 +308,16 @@ gmap.draw('results/map.html')
 
 
 # ------------------------- OPTIMAL FLIGHT TO GIVEN TRACK DIRECTION ---------------------------
+
 number = 0  # optimum flight calculation for fist scenario
-
 selected_glider = gliders_dict[scenarios[number].glider_file]
-
 track_HDG = 0
 
-vv_airmass_list = np.linspace(0,-3, 50)
+vv_airmass_list = np.linspace(0,-2, 50)
 airspeed_list = np.linspace(70, 180, 500)       #km/h
 
 # Initialize figure
-figure, figure_ax = plt.subplots()
+figure_1, figure_1_ax = plt.subplots()
 
 best_GR_AS_VV_list = []
 
@@ -346,7 +348,7 @@ for vv_airmass in vv_airmass_list:
   best_GR_AS_VV_list.append([vv_airmass, best_GR, best_speed, best_total_VV])
 
   legend = "VV = {:.1f} m/s".format(vv_airmass)
-  figure_ax = plotPoints(figure_ax, airspeed_list, glide_ratio_list, "AS (km/h)", "GR", legend)
+  figure_1_ax = plotPoints(figure_1_ax, airspeed_list, glide_ratio_list, "AS (km/h)", "GR", legend)
 
 best_VV = []
 best_GR = []
@@ -358,25 +360,16 @@ for list in best_GR_AS_VV_list:
   best_AS.append(list[2])
   best_VV_tot.append(list[3])
 
-figure_ax = plotPoints(figure_ax, best_AS, best_GR, "AS (km/h)", "GR", "max")
-
+figure_1_ax = plotPoints(figure_1_ax, best_AS, best_GR, "AS (km/h)", "GR", "max")
 
 # Initialize figure
-figure2, figure2_ax = plt.subplots(4,1)
+figure_2, figure2_ax = plt.subplots(1,3)
 figure2_ax = plotOptimalFlightValues(figure2_ax, best_AS, best_VV, best_GR, best_VV_tot)
-
-
 
 plt.show()  # Show lar figure
 # Save the plot as a PNG file
-figure.savefig('results/optimum_speed_vs_VV.png')
-
-
-
-
-
-
-
+figure_1.savefig('results/optimum_flight_values.png')
+figure_2.savefig('results/optimum_speed_vs_VV.png')
 
 
 # -------------------- END OF  OPTIMAL FLIGHT TO GIVEN TRACK DIRECTION ------------------------

@@ -132,27 +132,45 @@ def plotPoints(ax, x_points, y_points,x_label, y_label, legend):
 
     return ax
 
-def plotDragPolars(gliders):
+def find_best_glide_ratio(AS_list, VV_list):
+    best_GR = 0
+    for i in range(len(AS_list)):
+        GR = AS_list[i]/VV_list[i]/3.6
+        if GR > best_GR:
+            best_GR = GR
+            best_AS = AS_list[i]
+            best_VV = VV_list[i]
+    return best_AS, best_VV, best_GR
+
+def plotDragPolars(gliders, colors):
     """
     Plot drag polars of input glider list.
 
     Args:
         Dictonary of gliders.
     """
-    plt.figure(figsize=(8, 6))  # Adjust the figure size if needed
+    plt.figure()  # Adjust the figure size if needed
+    color_i = 0
     for name in gliders:
-        plt.plot(gliders[name].drag_polar_AS, gliders[name].drag_polar_VV, label=gliders[name].name)
+        plt.plot(gliders[name].drag_polar_AS, gliders[name].drag_polar_VV, label=gliders[name].name, color=colors[color_i])
         # speeds = np.linspace(0, 300, 300)
         # VV = []
         # for speed in speeds:
         #     VV.append(gliders[name].sinkAtAirspeed(speed))
         # plt.plot(speeds, VV, label=gliders[name].name)  
 
+        AS, VV, GR = find_best_glide_ratio(gliders[name].drag_polar_AS, gliders[name].drag_polar_VV)
+        plt.plot([0, 1.5*AS], [0, 1.5*VV], '--', color=colors[color_i])
+        plt.plot([AS, AS], [5.0, VV], '--', color=colors[color_i])
+
+        color_i += 1
+
     plt.title('Drag polar')
     plt.xlabel('Airspeed (km/h)')
     plt.ylabel('Sink rate (m/s)')
     plt.legend(loc='upper right')
     plt.ylim(0, 4)
+    plt.xlim(0, 250)
     plt.gca().invert_yaxis()
     plt.grid(True)
     # Save the plot as a PNG file
@@ -235,13 +253,11 @@ def plotOptimalFlightValues(axs, best_AS, best_VV, best_GR, best_VV_tot):
 
     axs[2].plot(best_AS, best_VV_tot, "-")
     axs[2].set_xlabel('AS (km/h)')
-    axs[2].set_ylabel('airmass VV (m/s)')
+    axs[2].set_ylabel('VV_tot (m/s)')
     axs[2].grid(True)
 
-    axs[3].plot(best_VV_tot, best_GR, "-")
-    axs[3].set_xlabel('VV tot (m/s)')
-    axs[3].set_ylabel('GR')
-    axs[3].grid(True)
+    return axs
+
 
 def draw_arrow(gmap, start_lat, start_lon, direction, wind_speed, radius, name, color='red'):
     radius = wind_speed/10*radius

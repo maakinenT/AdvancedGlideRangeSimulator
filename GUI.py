@@ -216,11 +216,13 @@ def GUI(scenarios):
     file_button = tk.Button(window, text="Select glider file", command=select_file)
     file_button.grid(row=9, column=0, padx=10, pady=10)
 
+
     # Label to display the selected file
     # file_label = tk.Label(window, text="")
     # file_label.grid(row=9, column=1, padx=10, pady=10)
     file_label_entry = tk.Entry(window)
     file_label_entry.grid(row=9, column=1, padx=10, pady=10)
+    file_label_entry.insert(0, "ASTIR_CS_JEANS_350kg.csv")      #default value
 
     # Create a button to open the color chooser
     choose_color_button = tk.Button(window, text="Choose Color", command=choose_color)
@@ -228,6 +230,8 @@ def GUI(scenarios):
     # Create a label to display the selected color
     selected_color_entry = tk.Entry(window)
     selected_color_entry.grid(row=10, column=1, padx=10, pady=10)
+    selected_color_entry.insert(0, "(255, 0, 0)")      # default value
+    selected_color_entry.config(bg="red")  # Set the background color of the label
 
     # Create scenario
     create_scenario_button = tk.Button(window, text="Create scenario", command=read_input_data)
